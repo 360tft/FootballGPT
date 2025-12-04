@@ -1,6 +1,6 @@
 import { createClient } from '@/lib/supabase/server'
 import { hasActiveSubscription } from '@/lib/subscription'
-import { openai, AI_CONFIG } from '@/lib/openai'
+import { getOpenAI, AI_CONFIG } from '@/lib/openai'
 import { SYSTEM_PROMPT } from '@/lib/system-prompt'
 import { NextRequest, NextResponse } from 'next/server'
 
@@ -66,7 +66,7 @@ export async function POST(request: NextRequest) {
     messages.push({ role: 'user', content: message })
 
     // Call OpenAI API
-    const completion = await openai.chat.completions.create({
+    const completion = await getOpenAI().chat.completions.create({
       model: AI_CONFIG.model,
       messages,
       max_tokens: AI_CONFIG.maxTokens,

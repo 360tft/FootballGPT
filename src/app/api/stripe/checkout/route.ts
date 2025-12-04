@@ -1,6 +1,6 @@
 import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
-import { stripe } from '@/lib/stripe'
+import { getStripe } from '@/lib/stripe'
 import { NextResponse } from 'next/server'
 
 export async function POST() {
@@ -27,6 +27,7 @@ export async function POST() {
     let customerId = subscription?.stripe_customer_id
 
     // Create a new Stripe customer if one doesn't exist
+    const stripe = getStripe()
     if (!customerId) {
       const customer = await stripe.customers.create({
         email: user.email,

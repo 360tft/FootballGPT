@@ -1,4 +1,4 @@
-import { stripe } from '@/lib/stripe'
+import { getStripe } from '@/lib/stripe'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { NextRequest, NextResponse } from 'next/server'
 import Stripe from 'stripe'
@@ -27,6 +27,7 @@ export async function POST(request: NextRequest) {
   }
 
   let event: Stripe.Event
+  const stripe = getStripe()
 
   try {
     event = stripe.webhooks.constructEvent(

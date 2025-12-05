@@ -33,16 +33,29 @@ export default function SignUpPage() {
 
     try {
       const supabase = createClient()
-      const { error } = await supabase.auth.signUp({
+
+      // Use the production URL from env, fallback to window.location.origin
+      const redirectUrl = process.env.NEXT_PUBLIC_APP_URL
+        ? `${process.env.NEXT_PUBLIC_APP_URL}/auth/callback`
+        : `${window.location.origin}/auth/callback`
+
+      const { data, error } = await supabase.auth.signUp({
         email,
         password,
         options: {
-          emailRedirectTo: `${window.location.origin}/auth/callback`,
+          emailRedirectTo: redirectUrl,
         },
       })
 
       if (error) {
         setError(error.message)
+        setLoading(false)
+        return
+      }
+
+      // Check if user already exists (Supabase returns a user with identities = [] for existing emails)
+      if (data.user && data.user.identities && data.user.identities.length === 0) {
+        setError('An account with this email already exists. Please sign in instead.')
         setLoading(false)
         return
       }
@@ -65,7 +78,7 @@ export default function SignUpPage() {
             <h1 className="text-3xl font-bold text-gray-900">Check your email</h1>
             <p className="mt-4 text-gray-600">
               We&apos;ve sent you an email with a link to confirm your account.
-              Please check your inbox and click the link to continue.
+              Please check your inbox (and your spam/junk folder) and click the link to continue.
             </p>
           </div>
           <Link

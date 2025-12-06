@@ -9,72 +9,77 @@ export default function AuthCallbackPage() {
   const [status, setStatus] = useState('Processing authentication...')
 
   useEffect(() => {
-    const handleCallback = async () => {
-      const supabase = createClient()
+    const supabase = createClient()
 
-      // Get the hash from the URL (contains tokens for email confirmation)
-      const hash = window.location.hash
+    // Check for error in URL params first
+    const params = new URLSearchParams(window.location.search)
+    const error = params.get('error')
+    const errorDescription = params.get('error_description')
 
-      // Check for access_token in hash (email confirmation flow)
-      if (hash && hash.includes('access_token')) {
-        // Supabase client will automatically handle the hash
-        const { data: { session }, error } = await supabase.auth.getSession()
+    if (error) {
+      setStatus('Authentication failed')
+      router.push(`/auth/error?error=${encodeURIComponent(errorDescription || error)}`)
+      return
+    }
 
-        if (error) {
-          console.error('Session error:', error)
-          setStatus('Authentication failed')
-          router.push(`/auth/error?error=${encodeURIComponent(error.message)}`)
-          return
-        }
+    // Listen for auth state changes - Supabase will automatically
+    // handle the hash fragment with implicit flow
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      async (event, session) => {
+        console.log('Auth state changed:', event, !!session)
 
-        if (session) {
+        if (event === 'SIGNED_IN' && session) {
           setStatus('Success! Redirecting...')
           router.push('/app')
-          return
+        } else if (event === 'TOKEN_REFRESHED' && session) {
+          setStatus('Success! Redirecting...')
+          router.push('/app')
+        } else if (event === 'SIGNED_OUT') {
+          setStatus('Session expired')
+          router.push('/auth/login')
         }
       }
+    )
 
-      // Check URL search params for code (PKCE flow)
-      const params = new URLSearchParams(window.location.search)
-      const code = params.get('code')
-      const error = params.get('error')
-      const errorDescription = params.get('error_description')
+    // Also check for existing session after a short delay
+    // (in case the auth state change already fired)
+    const checkSession = async () => {
+      await new Promise(resolve => setTimeout(resolve, 1000))
 
-      if (error) {
+      const { data: { session }, error: sessionError } = await supabase.auth.getSession()
+
+      if (sessionError) {
+        console.error('Session error:', sessionError)
         setStatus('Authentication failed')
-        router.push(`/auth/error?error=${encodeURIComponent(errorDescription || error)}`)
+        router.push(`/auth/error?error=${encodeURIComponent(sessionError.message)}`)
         return
       }
 
-      if (code) {
-        // Code exchange is handled by the route.ts - redirect there
-        // This page shouldn't normally hit this case as route.ts handles GET with code
-        const { error: exchangeError } = await supabase.auth.exchangeCodeForSession(code)
-        if (exchangeError) {
-          console.error('Exchange error:', exchangeError)
-          setStatus('Authentication failed')
-          router.push(`/auth/error?error=${encodeURIComponent(exchangeError.message)}`)
-          return
-        }
-        setStatus('Success! Redirecting...')
-        router.push('/app')
-        return
-      }
-
-      // Try to get existing session
-      const { data: { session } } = await supabase.auth.getSession()
       if (session) {
         setStatus('Success! Redirecting...')
         router.push('/app')
         return
       }
 
-      // No valid auth data found
-      setStatus('No authentication data found')
-      router.push('/auth/error?error=No%20authentication%20data%20found')
+      // If no session after checking, show error
+      // Wait a bit more in case auth is still processing
+      await new Promise(resolve => setTimeout(resolve, 2000))
+
+      const { data: { session: retrySession } } = await supabase.auth.getSession()
+      if (retrySession) {
+        setStatus('Success! Redirecting...')
+        router.push('/app')
+      } else {
+        setStatus('Authentication failed')
+        router.push('/auth/error?error=Could%20not%20establish%20session')
+      }
     }
 
-    handleCallback()
+    checkSession()
+
+    return () => {
+      subscription.unsubscribe()
+    }
   }, [router])
 
   return (

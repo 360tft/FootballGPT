@@ -12,5 +12,9 @@ export function createClient() {
     throw new Error('Missing Supabase configuration. Please check your environment variables.')
   }
 
-  return createBrowserClient(supabaseUrl, supabaseAnonKey)
+  return createBrowserClient(supabaseUrl, supabaseAnonKey, {
+    auth: {
+      flowType: 'implicit',
+    },
+  })
 }

@@ -122,7 +122,7 @@ export default async function BillingPage() {
               )}
             </div>
             <div className="text-2xl font-bold text-gray-900 mb-4">$14.99<span className="text-sm font-normal text-gray-500">/month</span></div>
-            <ul className="space-y-3 text-sm">
+            <ul className="space-y-3 text-sm mb-4">
               <li className="flex items-center text-gray-600">
                 <svg className="w-4 h-4 text-green-500 mr-2 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
@@ -154,6 +154,9 @@ export default async function BillingPage() {
                 Priority support
               </li>
             </ul>
+            {!isSubscribed && (
+              <BillingActions hasSubscription={false} />
+            )}
           </div>
         </div>
       </div>

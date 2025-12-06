@@ -25,25 +25,16 @@ export default async function DashboardPage() {
           <p className="mt-2 text-gray-600 text-sm">
             Get coaching advice, training plans, and tactical insights.
           </p>
-          {isSubscribed ? (
-            <Link
-              href="/app/chat"
-              className="mt-4 inline-block px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700"
-            >
-              Start chatting
-            </Link>
-          ) : (
-            <div className="mt-4">
-              <p className="text-sm text-amber-600 mb-2">
-                Upgrade to Pro to access the chat feature.
-              </p>
-              <Link
-                href="/app/billing"
-                className="inline-block px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700"
-              >
-                Upgrade to Pro
-              </Link>
-            </div>
+          <Link
+            href="/app/chat"
+            className="mt-4 inline-block px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700"
+          >
+            Start chatting
+          </Link>
+          {!isSubscribed && (
+            <p className="mt-2 text-xs text-gray-500">
+              Free plan: 5 messages per day
+            </p>
           )}
         </div>
 

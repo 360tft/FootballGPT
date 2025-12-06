@@ -40,8 +40,11 @@ export async function middleware(request: NextRequest) {
     return NextResponse.redirect(url)
   }
 
-  // Redirect authenticated users away from auth pages
-  if (request.nextUrl.pathname.startsWith('/auth') && user) {
+  // Redirect authenticated users away from auth pages (except callback and error)
+  if (request.nextUrl.pathname.startsWith('/auth') &&
+      !request.nextUrl.pathname.startsWith('/auth/callback') &&
+      !request.nextUrl.pathname.startsWith('/auth/error') &&
+      user) {
     const url = request.nextUrl.clone()
     url.pathname = '/app'
     return NextResponse.redirect(url)

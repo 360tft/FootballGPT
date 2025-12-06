@@ -1,13 +1,22 @@
-import Link from 'next/link'
+'use client'
 
-export default function AuthErrorPage() {
+import Link from 'next/link'
+import { useSearchParams } from 'next/navigation'
+import { Suspense } from 'react'
+
+function AuthErrorContent() {
+  const searchParams = useSearchParams()
+  const error = searchParams.get('error')
+
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
       <div className="max-w-md w-full space-y-8 text-center">
         <div>
           <h1 className="text-3xl font-bold text-gray-900">Authentication Error</h1>
           <p className="mt-4 text-gray-600">
-            Something went wrong during authentication. Please try again.
+            {error
+              ? decodeURIComponent(error)
+              : 'Something went wrong during authentication. Please try again.'}
           </p>
         </div>
         <div className="space-x-4">
@@ -26,5 +35,13 @@ export default function AuthErrorPage() {
         </div>
       </div>
     </div>
+  )
+}
+
+export default function AuthErrorPage() {
+  return (
+    <Suspense fallback={<div className="min-h-screen flex items-center justify-center">Loading...</div>}>
+      <AuthErrorContent />
+    </Suspense>
   )
 }

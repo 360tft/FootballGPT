@@ -14,7 +14,7 @@ export function getOpenAI(): OpenAI {
 
 // Configuration for the AI model
 export const AI_CONFIG = {
-  model: 'gpt-4.1' as const,  // Can be changed to 'gpt-4.1-mini' for cost savings
+  model: 'gpt-4o' as const,  // Can be changed to 'gpt-4o-mini' for cost savings
   maxTokens: 2048,
   temperature: 0.7,
 }

@@ -51,11 +51,18 @@ export async function middleware(request: NextRequest) {
         return NextResponse.redirect(url)
       }
 
-      // Success - redirect to app
+      // Success - redirect to app WITH session cookies
       const url = request.nextUrl.clone()
       url.pathname = '/app'
       url.search = ''
-      return NextResponse.redirect(url)
+      const redirectResponse = NextResponse.redirect(url)
+
+      // Copy all cookies from supabaseResponse to the redirect
+      supabaseResponse.cookies.getAll().forEach(cookie => {
+        redirectResponse.cookies.set(cookie.name, cookie.value, cookie)
+      })
+
+      return redirectResponse
     }
   }
 

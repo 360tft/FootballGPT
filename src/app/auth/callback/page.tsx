@@ -9,44 +9,37 @@ export default function AuthCallbackPage() {
   const [status, setStatus] = useState('Processing authentication...')
 
   useEffect(() => {
-    const supabase = createClient()
+    const handleAuth = async () => {
+      // Check for error in URL params first
+      const params = new URLSearchParams(window.location.search)
+      const error = params.get('error')
+      const errorDescription = params.get('error_description')
 
-    // Check for error in URL params first
-    const params = new URLSearchParams(window.location.search)
-    const error = params.get('error')
-    const errorDescription = params.get('error_description')
-
-    if (error) {
-      setStatus('Authentication failed')
-      router.push(`/auth/error?error=${encodeURIComponent(errorDescription || error)}`)
-      return
-    }
-
-    // Listen for auth state changes - Supabase will automatically
-    // handle the hash fragment with implicit flow
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (event, session) => {
-        console.log('Auth state changed:', event, !!session)
-
-        if (event === 'SIGNED_IN' && session) {
-          setStatus('Success! Redirecting...')
-          router.push('/app')
-        } else if (event === 'TOKEN_REFRESHED' && session) {
-          setStatus('Success! Redirecting...')
-          router.push('/app')
-        } else if (event === 'SIGNED_OUT') {
-          setStatus('Session expired')
-          router.push('/auth/login')
-        }
+      if (error) {
+        setStatus('Authentication failed')
+        router.push(`/auth/error?error=${encodeURIComponent(errorDescription || error)}`)
+        return
       }
-    )
 
-    // Also check for existing session after a short delay
-    // (in case the auth state change already fired)
-    const checkSession = async () => {
-      await new Promise(resolve => setTimeout(resolve, 1000))
+      // Check if we have tokens in the hash fragment (implicit flow)
+      const hash = window.location.hash
+      const hasTokens = hash.includes('access_token') || hash.includes('refresh_token')
 
+      console.log('Auth callback - hash present:', !!hash, 'has tokens:', hasTokens)
+
+      const supabase = createClient()
+
+      // If we have tokens in hash, Supabase should automatically parse them
+      // Give it a moment to process
+      if (hasTokens) {
+        setStatus('Verifying credentials...')
+        await new Promise(resolve => setTimeout(resolve, 500))
+      }
+
+      // Check for session immediately
       const { data: { session }, error: sessionError } = await supabase.auth.getSession()
+
+      console.log('Initial session check:', !!session, sessionError?.message)
 
       if (sessionError) {
         console.error('Session error:', sessionError)
@@ -61,25 +54,48 @@ export default function AuthCallbackPage() {
         return
       }
 
-      // If no session after checking, show error
-      // Wait a bit more in case auth is still processing
-      await new Promise(resolve => setTimeout(resolve, 2000))
+      // No session yet - set up listener and wait
+      setStatus('Completing authentication...')
 
-      const { data: { session: retrySession } } = await supabase.auth.getSession()
-      if (retrySession) {
+      let resolved = false
+
+      const { data: { subscription } } = supabase.auth.onAuthStateChange(
+        async (event, newSession) => {
+          console.log('Auth state changed:', event, !!newSession)
+
+          if (resolved) return
+
+          if ((event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') && newSession) {
+            resolved = true
+            setStatus('Success! Redirecting...')
+            router.push('/app')
+          }
+        }
+      )
+
+      // Final timeout check
+      await new Promise(resolve => setTimeout(resolve, 3000))
+
+      if (resolved) {
+        subscription.unsubscribe()
+        return
+      }
+
+      // One more session check
+      const { data: { session: finalSession } } = await supabase.auth.getSession()
+      subscription.unsubscribe()
+
+      if (finalSession) {
         setStatus('Success! Redirecting...')
         router.push('/app')
       } else {
+        console.error('No session after all attempts')
         setStatus('Authentication failed')
-        router.push('/auth/error?error=Could%20not%20establish%20session')
+        router.push('/auth/error?error=Could%20not%20establish%20session.%20Please%20try%20signing%20in%20again.')
       }
     }
 
-    checkSession()
-
-    return () => {
-      subscription.unsubscribe()
-    }
+    handleAuth()
   }, [router])
 
   return (

@@ -27,6 +27,38 @@ export async function middleware(request: NextRequest) {
     }
   )
 
+  // Handle auth callback with PKCE code exchange
+  if (request.nextUrl.pathname === '/auth/callback') {
+    const code = request.nextUrl.searchParams.get('code')
+    const error = request.nextUrl.searchParams.get('error')
+
+    if (error) {
+      const errorDesc = request.nextUrl.searchParams.get('error_description') || error
+      const url = request.nextUrl.clone()
+      url.pathname = '/auth/error'
+      url.searchParams.set('error', errorDesc)
+      return NextResponse.redirect(url)
+    }
+
+    if (code) {
+      const { error: exchangeError } = await supabase.auth.exchangeCodeForSession(code)
+
+      if (exchangeError) {
+        console.error('PKCE code exchange error:', exchangeError.message)
+        const url = request.nextUrl.clone()
+        url.pathname = '/auth/error'
+        url.searchParams.set('error', exchangeError.message)
+        return NextResponse.redirect(url)
+      }
+
+      // Success - redirect to app
+      const url = request.nextUrl.clone()
+      url.pathname = '/app'
+      url.search = ''
+      return NextResponse.redirect(url)
+    }
+  }
+
   // Refresh session if expired
   const {
     data: { user },

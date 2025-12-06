@@ -35,9 +35,8 @@ export default function SignUpPage() {
       const supabase = createClient()
 
       // Use the production URL from env, fallback to window.location.origin
-      const redirectUrl = process.env.NEXT_PUBLIC_APP_URL
-        ? `${process.env.NEXT_PUBLIC_APP_URL}/auth/callback`
-        : `${window.location.origin}/auth/callback`
+      const baseUrl = (process.env.NEXT_PUBLIC_APP_URL || window.location.origin).replace(/\/$/, '')
+      const redirectUrl = `${baseUrl}/auth/callback`
 
       const { data, error } = await supabase.auth.signUp({
         email,

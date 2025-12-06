@@ -3,6 +3,7 @@
 import { Suspense, useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { useRouter, useSearchParams } from 'next/navigation'
+import Link from 'next/link'
 
 function AuthForm() {
   const [isLogin, setIsLogin] = useState(false)
@@ -157,9 +158,19 @@ function AuthForm() {
         </div>
 
         <div>
-          <label htmlFor="password" className="block text-sm font-medium text-gray-700">
-            Password
-          </label>
+          <div className="flex items-center justify-between">
+            <label htmlFor="password" className="block text-sm font-medium text-gray-700">
+              Password
+            </label>
+            {isLogin && (
+              <Link
+                href="/auth/forgot-password"
+                className="text-sm text-green-600 hover:text-green-500"
+              >
+                Forgot password?
+              </Link>
+            )}
+          </div>
           <input
             id="password"
             name="password"

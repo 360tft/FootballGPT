@@ -73,6 +73,99 @@ export default function HomePage() {
             </p>
           </div>
         </div>
+
+        {/* Pricing Section */}
+        <div className="mt-32 max-w-5xl mx-auto">
+          <h2 className="text-3xl font-bold text-center text-gray-900 mb-4">
+            Simple, Transparent Pricing
+          </h2>
+          <p className="text-center text-gray-600 mb-12">
+            Start free, upgrade when you need more
+          </p>
+
+          <div className="grid md:grid-cols-2 gap-8">
+            {/* Free Plan */}
+            <div className="bg-white p-8 rounded-xl shadow-sm border border-gray-200">
+              <h3 className="text-xl font-semibold text-gray-900">Free</h3>
+              <div className="mt-4">
+                <span className="text-4xl font-bold text-gray-900">$0</span>
+                <span className="text-gray-500">/month</span>
+              </div>
+              <p className="mt-4 text-gray-600">Perfect for trying out FootballGPT</p>
+              <ul className="mt-6 space-y-3">
+                <li className="flex items-start">
+                  <svg className="w-5 h-5 text-green-500 mr-3 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                  </svg>
+                  <span className="text-gray-600">5 messages per day</span>
+                </li>
+                <li className="flex items-start">
+                  <svg className="w-5 h-5 text-green-500 mr-3 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                  </svg>
+                  <span className="text-gray-600">Fast AI model</span>
+                </li>
+                <li className="flex items-start">
+                  <svg className="w-5 h-5 text-green-500 mr-3 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                  </svg>
+                  <span className="text-gray-600">Evidence-based coaching advice</span>
+                </li>
+              </ul>
+              <Link
+                href="/auth/login"
+                className="mt-8 block w-full py-3 text-center text-green-600 font-semibold border border-green-600 rounded-lg hover:bg-green-50 transition-colors"
+              >
+                Get Started Free
+              </Link>
+            </div>
+
+            {/* Pro Plan */}
+            <div className="bg-green-600 p-8 rounded-xl shadow-lg border-2 border-green-500 relative">
+              <div className="absolute -top-3 left-1/2 -translate-x-1/2 bg-green-700 text-white text-xs font-semibold px-3 py-1 rounded-full">
+                MOST POPULAR
+              </div>
+              <h3 className="text-xl font-semibold text-white">Pro</h3>
+              <div className="mt-4">
+                <span className="text-4xl font-bold text-white">$14.99</span>
+                <span className="text-green-200">/month</span>
+              </div>
+              <p className="mt-4 text-green-100">Everything you need to excel</p>
+              <ul className="mt-6 space-y-3">
+                <li className="flex items-start">
+                  <svg className="w-5 h-5 text-green-300 mr-3 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                  </svg>
+                  <span className="text-white">Unlimited messages</span>
+                </li>
+                <li className="flex items-start">
+                  <svg className="w-5 h-5 text-green-300 mr-3 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                  </svg>
+                  <span className="text-white">Smart AI routing (fast + powerful models)</span>
+                </li>
+                <li className="flex items-start">
+                  <svg className="w-5 h-5 text-green-300 mr-3 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                  </svg>
+                  <span className="text-white">Chat history saved</span>
+                </li>
+                <li className="flex items-start">
+                  <svg className="w-5 h-5 text-green-300 mr-3 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                  </svg>
+                  <span className="text-white">Priority support</span>
+                </li>
+              </ul>
+              <Link
+                href="/auth/login"
+                className="mt-8 block w-full py-3 text-center text-green-600 font-semibold bg-white rounded-lg hover:bg-green-50 transition-colors"
+              >
+                Start Pro Trial
+              </Link>
+            </div>
+          </div>
+        </div>
       </main>
 
       {/* Footer */}

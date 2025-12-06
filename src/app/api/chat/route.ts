@@ -1,7 +1,9 @@
 import { createClient } from '@/lib/supabase/server'
+import { createAdminClient } from '@/lib/supabase/admin'
 import { hasActiveSubscription } from '@/lib/subscription'
 import { getOpenAI, AI_CONFIG, selectModel, MODELS } from '@/lib/openai'
 import { SYSTEM_PROMPT } from '@/lib/system-prompt'
+import { canSendMessage, incrementMessageCount, FREE_TIER_LIMITS } from '@/lib/usage'
 import { NextRequest, NextResponse } from 'next/server'
 
 export interface ChatMessage {
@@ -15,7 +17,6 @@ function summarizeHistory(history: ChatMessage[]): string {
 
   const topics = new Set<string>()
   for (const msg of history) {
-    // Extract key topics from messages
     const content = msg.content.toLowerCase()
     if (content.includes('drill')) topics.add('drills')
     if (content.includes('formation')) topics.add('formations')
@@ -45,18 +46,26 @@ export async function POST(request: NextRequest) {
     // Check subscription status
     const isSubscribed = await hasActiveSubscription(user.id)
 
-    if (!isSubscribed) {
+    // Check if user can send message (free tier limits)
+    const usageCheck = await canSendMessage(user.id, isSubscribed)
+
+    if (!usageCheck.allowed) {
       return NextResponse.json(
-        { error: 'Active subscription required to use chat' },
+        {
+          error: usageCheck.reason,
+          remaining: 0,
+          limit_reached: true,
+        },
         { status: 403 }
       )
     }
 
     // Parse the request body
     const body = await request.json()
-    const { message, history } = body as {
+    const { message, history, conversationId } = body as {
       message: string
       history: ChatMessage[]
+      conversationId?: string
     }
 
     if (!message || typeof message !== 'string') {
@@ -66,8 +75,13 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Smart model selection based on query complexity
-    const selectedModel = selectModel(message)
+    // Model selection: Free users get mini only, Pro users get smart routing
+    let selectedModel: string
+    if (isSubscribed) {
+      selectedModel = selectModel(message)
+    } else {
+      selectedModel = FREE_TIER_LIMITS.MODEL // Always mini for free users
+    }
 
     // Build the messages array for OpenAI
     const messages: Array<{ role: 'system' | 'user' | 'assistant'; content: string }> = [
@@ -79,7 +93,6 @@ export async function POST(request: NextRequest) {
       const RECENT_LIMIT = 6
 
       if (history.length > RECENT_LIMIT) {
-        // Summarize older messages
         const olderHistory = history.slice(0, -RECENT_LIMIT)
         const summary = summarizeHistory(olderHistory)
         if (summary) {
@@ -90,7 +103,6 @@ export async function POST(request: NextRequest) {
         }
       }
 
-      // Add recent messages verbatim
       const recentHistory = history.slice(-RECENT_LIMIT)
       for (const msg of recentHistory) {
         messages.push({
@@ -120,17 +132,49 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Log model usage for monitoring (optional - can be removed in production)
-    console.log(`[Chat] Model: ${selectedModel}, Query length: ${message.length}`)
+    // Increment usage count for free users
+    let remaining = -1 // -1 means unlimited (Pro)
+    if (!isSubscribed) {
+      const updatedUsage = await incrementMessageCount(user.id)
+      remaining = updatedUsage.remaining_today
+    }
+
+    // Save chat history for Pro users
+    if (isSubscribed && conversationId) {
+      const adminClient = createAdminClient()
+      const convId = conversationId || crypto.randomUUID()
+
+      // Save user message
+      await adminClient.from('chat_history').insert({
+        user_id: user.id,
+        conversation_id: convId,
+        role: 'user',
+        content: message,
+        model_used: selectedModel,
+      })
+
+      // Save assistant message
+      await adminClient.from('chat_history').insert({
+        user_id: user.id,
+        conversation_id: convId,
+        role: 'assistant',
+        content: assistantMessage,
+        model_used: selectedModel,
+      })
+    }
+
+    // Log model usage
+    console.log(`[Chat] User: ${user.id.slice(0, 8)}, Model: ${selectedModel}, Pro: ${isSubscribed}`)
 
     return NextResponse.json({
       message: assistantMessage,
-      model: selectedModel, // Include model info for transparency (optional)
+      model: selectedModel,
+      remaining: remaining,
+      is_pro: isSubscribed,
     })
   } catch (error) {
     console.error('Chat API error:', error)
 
-    // Handle specific OpenAI errors
     if (error instanceof Error) {
       if (error.message.includes('rate limit')) {
         return NextResponse.json(

@@ -10,8 +10,10 @@ export default function AuthCallbackPage() {
 
   useEffect(() => {
     const handleAuth = async () => {
-      // Check for error in URL params first
       const params = new URLSearchParams(window.location.search)
+      const hash = window.location.hash
+
+      // Check for error in URL params first
       const error = params.get('error')
       const errorDescription = params.get('error_description')
 
@@ -21,25 +23,44 @@ export default function AuthCallbackPage() {
         return
       }
 
-      // Check if we have tokens in the hash fragment (implicit flow)
-      const hash = window.location.hash
-      const hasTokens = hash.includes('access_token') || hash.includes('refresh_token')
-
-      console.log('Auth callback - hash present:', !!hash, 'has tokens:', hasTokens)
-
       const supabase = createClient()
 
-      // If we have tokens in hash, Supabase should automatically parse them
-      // Give it a moment to process
-      if (hasTokens) {
+      // Check for PKCE flow - code in query params
+      const code = params.get('code')
+      if (code) {
+        console.log('PKCE flow detected - exchanging code for session')
         setStatus('Verifying credentials...')
+
+        const { data, error: exchangeError } = await supabase.auth.exchangeCodeForSession(code)
+
+        if (exchangeError) {
+          console.error('Code exchange error:', exchangeError)
+          setStatus('Authentication failed')
+          router.push(`/auth/error?error=${encodeURIComponent(exchangeError.message)}`)
+          return
+        }
+
+        if (data.session) {
+          console.log('Session established via PKCE')
+          setStatus('Success! Redirecting...')
+          router.push('/app')
+          return
+        }
+      }
+
+      // Check for implicit flow - tokens in hash fragment
+      const hasTokens = hash.includes('access_token') || hash.includes('refresh_token')
+      if (hasTokens) {
+        console.log('Implicit flow detected - tokens in hash')
+        setStatus('Verifying credentials...')
+        // Supabase client should auto-parse hash tokens
         await new Promise(resolve => setTimeout(resolve, 500))
       }
 
-      // Check for session immediately
+      // Check for existing session
       const { data: { session }, error: sessionError } = await supabase.auth.getSession()
 
-      console.log('Initial session check:', !!session, sessionError?.message)
+      console.log('Session check:', !!session, sessionError?.message)
 
       if (sessionError) {
         console.error('Session error:', sessionError)
@@ -54,7 +75,7 @@ export default function AuthCallbackPage() {
         return
       }
 
-      // No session yet - set up listener and wait
+      // No session yet - wait for auth state change
       setStatus('Completing authentication...')
 
       let resolved = false
@@ -73,23 +94,21 @@ export default function AuthCallbackPage() {
         }
       )
 
-      // Final timeout check
+      // Wait for auth to complete
       await new Promise(resolve => setTimeout(resolve, 3000))
 
-      if (resolved) {
-        subscription.unsubscribe()
-        return
-      }
-
-      // One more session check
-      const { data: { session: finalSession } } = await supabase.auth.getSession()
       subscription.unsubscribe()
+
+      if (resolved) return
+
+      // Final session check
+      const { data: { session: finalSession } } = await supabase.auth.getSession()
 
       if (finalSession) {
         setStatus('Success! Redirecting...')
         router.push('/app')
       } else {
-        console.error('No session after all attempts')
+        console.error('No session after all attempts. URL:', window.location.href)
         setStatus('Authentication failed')
         router.push('/auth/error?error=Could%20not%20establish%20session.%20Please%20try%20signing%20in%20again.')
       }

@@ -14,7 +14,8 @@ export function createClient() {
 
   return createBrowserClient(supabaseUrl, supabaseAnonKey, {
     auth: {
-      flowType: 'implicit',
+      flowType: 'pkce',
+      detectSessionInUrl: true,
     },
   })
 }
